@@ -6,8 +6,14 @@
 ;Compiler: MPLAB X IDE v6.20
 ;Author: Mathew Teague
 ;OUTPUTS:
-;   PORTD.1 -> Heating system
-;   PORTD.2 -> Cooling system
+;   PORTD.1 - Heating system
+;   PORTD.2 - Cooling system
+;   refD1   - registers refDx store refTemp in decimal
+;   refD2
+;   refD3
+;   measuredD1	- registers measuredDx store measuredTemp in decimal
+;   measuredD2
+;   measuredD3
 ;INPUTS:
 ;   keypad -> refTemp
 ;   temperature sensor -> measuredTemp
