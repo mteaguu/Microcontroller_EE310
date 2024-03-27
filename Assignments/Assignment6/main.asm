@@ -12,6 +12,11 @@
 ;   Button B
 ;Versions:
 ;   V1.0: 3/26/24 - First Verison. Most of the code is finished, just need testing
+;   V2.0: 3/27/24 - Added code that deals with cycling the counter back to
+;		    0 or F
+;		  - Added delay code
+;		  - Fixed portB setup
+;		  - Fixed reset trigger code
 ;---------------------
 ; Initialization
 ;---------------------
@@ -50,11 +55,11 @@ displayOut	EQU	    PORTD
     
     SETF   TRISB   ;set PORTB bits to all 1 (input)
     BANKSEL ANSELB
-    SETF   ANSELB	;set PORTB to analog
+    CLRF   ANSELB	;set PORTB to digital
     
-    MOVLW   0x0E
+    MOVLW   0x11
     MOVWF   tbltop	;this is for checking if TBLPTR is too high or low
-    MOVLW   0x00
+    MOVLW   0x01
     MOVWF   tblbottom
 	
 _RESET:	    ;point tblptr at 0's 7 seg display code, and put 0 on display
@@ -66,6 +71,7 @@ _RESET:	    ;point tblptr at 0's 7 seg display code, and put 0 on display
     MOVLW   TBLPTRU
     TBLRD*
     MOVFF   TABLAT,displayOut
+    CALL    _DELAY
     
 _BUTTONCHECK:	;check what buttons are pressed, if any
     BTFSS	buttonA
@@ -88,6 +94,8 @@ _INCREMENT:  ;increment the dispay
     CALL    _DELAY
     GOTO    _BUTTONCHECK
 _DECREMENT: ;decrement the display
+    BTFSS   buttonA	;check if button B is also pressed
+    GOTO    _RESET	;button B is pressed
     TBLRD*-
     TBLRD*
     BTFSC   TABLAT,7	;the only case where this bit is set, is if TBLPTR
@@ -111,14 +119,16 @@ _TOOFAR:
 _DELAY:	;create an artificial delay, after updating the display
     MOVLW   0xFF
     MOVWF   delayREG	;reg used exclusively in this func
-_DECDELAY:
+_DECDELAYA:
     MOVLW   0xFF
     MOVWF   delayREGB
+_DECDELAYB:
     NOP
     NOP
     DECF    delayREGB, 1
+    BNZ	    _DECDELAYB
     DECF    delayREG, 1	;decrement delayREG, store result in delayREG
-    BNZ	    _DECDELAY
+    BNZ	    _DECDELAYA
     return
 
     
