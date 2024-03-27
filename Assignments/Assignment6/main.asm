@@ -17,6 +17,7 @@
 ;		  - Added delay code
 ;		  - Fixed portB setup
 ;		  - Fixed reset trigger code
+;   V2.1: 3/27/24 - Added comments for code that was missing explanation
 ;---------------------
 ; Initialization
 ;---------------------
@@ -26,21 +27,21 @@
 ;---------------------
 ; Program Inputs
 ;---------------------
-#define	    buttonA	    PORTB,1	;increment button
-#define	    buttonB	    PORTB,2	;decrement button
+#define	    buttonA	PORTB,1	    ;increment button
+#define	    buttonB	PORTB,2	    ;decrement button
 
 ;---------------------
 ; Registers
 ;---------------------
-delayREG    EQU	    0x10
-delayREGB   EQU	    0x11
-tbltop	    EQU	    0x12
-tblbottom   EQU	    0x13
+delayREG    EQU	    0x10    ;used for _DELAY outer loop
+delayREGB   EQU	    0x11    ;used for _DELAY inner loop
+tbltop	    EQU	    0x12    ;location of F's display code
+tblbottom   EQU	    0x13    ;location of 0's display code
    
 ;---------------------
 ; Program Outputs
 ;---------------------
-displayOut	EQU	    PORTD
+displayOut	EQU	PORTD   ;7 seg display is connected to portD
 
 ;---------------------
 ; Main Program
@@ -58,7 +59,7 @@ displayOut	EQU	    PORTD
     CLRF   ANSELB	;set PORTB to digital
     
     MOVLW   0x11
-    MOVWF   tbltop	;this is for checking if TBLPTR is too high or low
+    MOVWF   tbltop	;this is for when TBLPTR moves too high or low
     MOVLW   0x01
     MOVWF   tblbottom
 	
@@ -66,11 +67,11 @@ _RESET:	    ;point tblptr at 0's 7 seg display code, and put 0 on display
     MOVLW   0x01
     MOVWF   TBLPTRL
     MOVLW   0x04
-    MOVWF   TBLPTRH
-    MOVLW   0x00
+    MOVWF   TBLPTRH	;point TBLPTR at 0x401 in prog mem, which is
+    MOVLW   0x00	;the location of 0's 7 seg display code
     MOVLW   TBLPTRU
     TBLRD*
-    MOVFF   TABLAT,displayOut
+    MOVFF   TABLAT,displayOut	;move 0's 7 seg display code to display
     CALL    _DELAY
     
 _BUTTONCHECK:	;check what buttons are pressed, if any
@@ -85,55 +86,55 @@ _INCREMENT:  ;increment the dispay
     BTFSS   buttonB	;check if button B is also pressed
     GOTO    _RESET	;button B is pressed
     TBLRD*+
-    TBLRD*
+    TBLRD*		;increment TBLPTR
     BTFSC   TABLAT,7	;the only case where this bit is set, is if TBLPTR
 			;is either to high or too low
-    CALL    _TOOFAR
+    CALL    _TOOFAR	;point TBLPTR at the 0's 7 seg display
     TBLRD*
-    MOVFF   TABLAT,displayOut
+    MOVFF   TABLAT,displayOut	;move display code to display
     CALL    _DELAY
     GOTO    _BUTTONCHECK
 _DECREMENT: ;decrement the display
-    BTFSS   buttonA	;check if button B is also pressed
-    GOTO    _RESET	;button B is pressed
-    TBLRD*-
+    BTFSS   buttonA	;check if button A is also pressed
+    GOTO    _RESET	;button A is pressed
+    TBLRD*-		;decrement TBLPTR
     TBLRD*
     BTFSC   TABLAT,7	;the only case where this bit is set, is if TBLPTR
 			;is either to high or too low
-    CALL    _TOOFAR
+    CALL    _TOOFAR	;point TBLPTR at the F's 7 seg code
     TBLRD*
     MOVFF   TABLAT,displayOut	;move display code to display
     CALL    _DELAY
     GOTO    _BUTTONCHECK
 
-_TOOFAR:
-    MOVLW   0xF1
+_TOOFAR:    ;TBLPTR has gone too far up or down
+    MOVLW   0xF1	    ;marker for too low
     CPFSEQ  TABLAT
-    MOVFF   tbltop,TBLPTRL
-    MOVLW   0xF0
+    MOVFF   tbltop,TBLPTRL  ;TBLPTR went too low
+    MOVLW   0xF0	    ;marker for too high
     CPFSEQ  TABLAT
-    MOVFF   tblbottom,TBLPTRL
+    MOVFF   tblbottom,TBLPTRL	;TBLPTR went too high
     RETURN
     
 
 _DELAY:	;create an artificial delay, after updating the display
     MOVLW   0xFF
-    MOVWF   delayREG	;reg used exclusively in this func
-_DECDELAYA:
+    MOVWF   delayREG	;outerloop reg
+_DECDELAYA: ;outerloop
     MOVLW   0xFF
-    MOVWF   delayREGB
-_DECDELAYB:
+    MOVWF   delayREGB	;innerloop reg
+_DECDELAYB: ;innerloop
     NOP
     NOP
-    DECF    delayREGB, 1
+    DECF    delayREGB, 1 ;decrement delayREGB, store result in delayREGB
     BNZ	    _DECDELAYB
-    DECF    delayREG, 1	;decrement delayREG, store result in delayREG
+    DECF    delayREG, 1	 ;innerloop has reached 0, repeat and dec outerloop once
     BNZ	    _DECDELAYA
-    return
+    return		 ;innerloop and outerloop = 0
 
     
-    ORG	    0x400
-    DB	    0xF0
+    ORG	    0x400   ;storing 7 seg display code in prog mem
+    DB	    0xF0    ;Used for _TOOFAR
     DB	    0x3F    ;0
     DB	    0x06    ;1
     DB	    0x5B    ;2
@@ -150,6 +151,6 @@ _DECDELAYB:
     DB	    0x3F    ;D
     DB	    0x79    ;E
     DB	    0x71    ;F
-    DB	    0xF1
+    DB	    0xF1    ;Used for _TOOFAR
     
     END
