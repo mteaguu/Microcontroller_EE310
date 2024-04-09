@@ -16,6 +16,8 @@
  *                     is pressed to the output LEDs.
  *      V1.0: 4/7/24 - First working version. The program is nearly ready to be
  *                     shipped, just need to add comments.
+ *      V1.1: 4/9/24 - Added comments. Updated code for the final button press
+ *                     to match the other buttons in the sequence.
 */
 
 
@@ -50,57 +52,62 @@ void main (void) {
     unsigned char button = 0;
     
     button = keyPress();    //first digit
-    while  (button == 16) {
+    while  (button == 16) {     //wait for key press
         button = keyPress();
     }
-    if (button > 9) 
+    if (button > 9)         //check for valid input (0-9)
         return;
-    xInReg = button;
+    xInReg = button;        //store x value
     PORTD = 1;             //input 1 LED on
     __delay_ms(200);
     
     button = keyPress();    //operator
-    while  (button == 16) {
+    while  (button == 16) {     //wait for key press
         button = keyPress();
     }
-    if (button <= 9)
+    if (button <= 9)        // check for valid input (a-d))
         return;
     if (button >= 14)
         return;
-    opReg = button;
-    //PORTD = button;             //for testing (FIX)
+    opReg = button;         //store operator value
     __delay_ms(200);
     
     button = keyPress();    //digit 2
-    while  (button == 16) {
+    while  (button == 16) {     //wait for key press
         button = keyPress();
     }
-    if (button > 9) 
+    if (button > 9)         // check for valid input (0-9)
         return;
-    yInReg = button;
+    yInReg = button;        //store value
     PORTD = 2;             // input 2 LED on (FIX)
     __delay_ms(200);
     
-    while (button != 22) {
+//    while (button != 22) {
+//        button = keyPress();  // Original code
+//    }
+    button = keyPress();
+    while  (button == 16) {     //wait for key press
         button = keyPress();
     }
+    if (button != 22)       // check for valid key press (#)
+        return;
     
-    if (opReg == 10) {
+    if (opReg == 10) {      //addition
         disReg = xInReg + yInReg;
     }   
-    else if (opReg == 11)    {
+    else if (opReg == 11)    {      //subtraction
         disReg = xInReg - yInReg;
     }
-    else if (opReg == 12)    {
+    else if (opReg == 12)    {      //multiplication
         disReg = xInReg * yInReg;
     }
-    else if (opReg == 13)    {
+    else if (opReg == 13)    {      //division
         disReg = xInReg / yInReg;
     }
     
-    PORTD = disReg;
+    PORTD = disReg;     //output to LEDs
     __delay_ms(200);
-    button = keyPress();
+    button = keyPress();    //wait for key press
     while (button == 16)
         button = keyPress();
     return;
