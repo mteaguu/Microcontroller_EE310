@@ -5,11 +5,11 @@
  * Program Details:
  *  This program runs a simple calculator circuit
  * Inputs:
- *      PORTB
+ *      PORTB (Keypad)
  * Outputs:
- *      PORTD
+ *      PORTD (LEDs)
  * Setup: C- Simulator
- * Compiler: xc8, 2.46
+ * Compiler: xc8 v2.46
  * Author: Mathew Teague
  * Versions:
  *      V0.1: 4/7/24 - Test version. This code outputs which keypad button 
@@ -18,6 +18,9 @@
  *                     shipped, just need to add comments.
  *      V1.1: 4/9/24 - Added comments. Updated code for the final button press
  *                     to match the other buttons in the sequence.
+ *      V1.2: 4/10/24 - Moved the code for performing the operation out of main()
+ *                      and into it's own function that is called by main().
+ *                      Added more comments.
 */
 
 
@@ -25,7 +28,7 @@
 #include "C:/Program Files/Microchip/xc8/v2.46/pic/include/proc/pic18f47k42.h"
 #include "/CalculatorHeader.h"
 
-#define _XTAL_FREQ 4000000                 // Fosc  frequency for _delay()  library
+#define _XTAL_FREQ 4000000       // Fosc  frequency for _delay()  library
 #define FCY    _XTAL_FREQ/4
 
 
@@ -33,7 +36,9 @@
 #include <stdlib.h>
 #include <math.h>
 
-unsigned char keyPress();
+unsigned char keyPress(void);   //check which key is pressed, if any
+char performOperation( char opReg, char xInReg, char yInReg );
+//perform an operation based on the values entered with the keypad
 
 
 void main (void) {
@@ -92,20 +97,8 @@ void main (void) {
     if (button != 22)       // check for valid key press (#)
         return;
     
-    if (opReg == 10) {      //addition
-        disReg = xInReg + yInReg;
-    }   
-    else if (opReg == 11)    {      //subtraction
-        disReg = xInReg - yInReg;
-    }
-    else if (opReg == 12)    {      //multiplication
-        disReg = xInReg * yInReg;
-    }
-    else if (opReg == 13)    {      //division
-        disReg = xInReg / yInReg;
-    }
+    PORTD = performOperation(opReg, xInReg, yInReg);     //output to LEDs
     
-    PORTD = disReg;     //output to LEDs
     __delay_ms(200);
     button = keyPress();    //wait for key press
     while (button == 16)
@@ -114,19 +107,20 @@ void main (void) {
 }
 
 unsigned char keyPress () {
-    unsigned int keypad[4][4] = {1,2,3,10,
+    unsigned char keypad[4][4] = {1,2,3,10,     //this represents the keypad
                                   4,5,6,11,
                                   7,8,9,12,
                                   21,0,22,13};
     unsigned char temp = 0, COL = 0, ROW = 0;
-    __delay_ms(100);    
+    __delay_ms(100);
     temp = PORTB;
-    temp ^= 0xF0;
+    temp ^= 0xF0;               //only the grounded pin will be recorded in temp
     if(!temp) return 16;
-    while(temp<<= 1) COL ++;
+    while(temp<<= 1) COL ++;    //check which column was pressed by shifting
+                                //temp until it equals zero
     PORTB = 0xFE;
-    if(PORTB != 0xFE)
-        ROW = 0;
+    if(PORTB != 0xFE)           //these if statements find which row was pressed
+        ROW = 0;                //by grounding each row one by one
     else {
         PORTB = 0xFD;
         if(PORTB != 0xFD)
@@ -146,7 +140,23 @@ unsigned char keyPress () {
             }
         }
     PORTB = 0xF0;       //reset portB
-    return keypad[ROW][COL];
-    
-    
+    return keypad[ROW][COL];    //return the key that was pressed
+       
+}
+
+char performOperation( char opReg, char xInReg, char yInReg ) {
+    char disReg = 0;
+    if (opReg == 10) {      //addition
+        disReg = xInReg + yInReg;
+    }   
+    else if (opReg == 11)    {      //subtraction
+        disReg = xInReg - yInReg;
+    }
+    else if (opReg == 12)    {      //multiplication
+        disReg = xInReg * yInReg;
+    }
+    else if (opReg == 13)    {      //division
+        disReg = xInReg / yInReg;
+    }
+    return disReg;  //return result of operation
 }
