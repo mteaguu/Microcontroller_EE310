@@ -16,6 +16,9 @@
  * Versions:
  *      V1.0 - Code is set up to read voltage from a potentiometer and output to
  *             the LCD
+ *      V2.0 - Code is set up to read voltage from a photo resistor and convert
+ *             it to lux using approximation. The approximated value is output
+ *             to LCD
 */
 
 
@@ -94,6 +97,7 @@
 int digital; // holds the digital value 
 float voltage; // hold the analog value (volt))
 char data[10];
+float lux;    //holds result of lux calculation
 
 void ADC_Init(void);
 void LCD_Init();
@@ -113,8 +117,8 @@ void main(void)
     
     //ADC Initialization
     ADC_Init();
-    LCD_String_xy(1,0,"Input Voltage:");
-    
+    //LCD_String_xy(1,0,"Input Voltage:");
+    LCD_String_xy(1,0,"Input Light      ");
     while (1) {
         ADCON0bits.GO = 1; //Start conversion
         while (ADCON0bits.GO); //Wait for conversion done
@@ -123,22 +127,19 @@ void main(void)
         
         //print on LCD 
         /*It is used to convert integer value to ASCII string*/
-        sprintf(data,"%.2f",voltage);
+        //sprintf(data,"%.2f",voltage);
 
-        strcat(data," V                   ");	/*Concatenate result and unit to print*/
-        //LCD_String_xy(2,4,data);/*Send string data for printing*/
-        //LCD_String_xy(1,0,"The Input Voltage:");    /* Display string at location(row,location). */
-                                         /* This function passes string to display */
-        LCD_String_xy(2,0,data);   /*Display string at location(row,location). */
-                                   /* This function passes string to display */ 
+        //strcat(data," V                   ");	/*Concatenate result and unit to print*/
+        /* This function passes string to display */
+        //LCD_String_xy(2,0,data);   /*Display string at location(row,location). */
+        
+        //lux = (0 - 578)*voltage + 2441; //linear regression
+        lux = -305.74 + 1235.64/voltage; //hyperbolic regression
+        sprintf(data,"%.2f",lux); //make int into string
+        strcat(data," LUX          "); //add units to string
+        LCD_String_xy(2,0,data); //output to display    
     }
     
-//    LCD_String_xy(1,0,"The Input Voltage:");    /* Display string at location(row,location). */
-//                                         /* This function passes string to display */
-//    LCD_String_xy(2,0,data);   /*Display string at location(row,location). */
-//                                   /* This function passes string to display */    
-    
-//    while(1);
 }
 
 /****************************Functions********************************/
